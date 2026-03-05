@@ -1,0 +1,25 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+      - run: uv python install 3.13
+      - run: uv build
+      - name: Smoke test (wheel)
+        run: uv run --isolated --no-project --with dist/*.whl -c "from who_api_client import WHOAPIClient; print('wheel OK')"
+      - name: Smoke test (sdist)
+        run: uv run --isolated --no-project --with dist/*.tar.gz -c "from who_api_client import WHOAPIClient; print('sdist OK')"
+      - run: uv publish

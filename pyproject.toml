@@ -1,6 +1,6 @@
 [project]
 name = "who-api-client"
-version = "0.1.0"
+version = "0.1.1"
 description = "A type-safe Python client for the WHO Classification of Tumours API"
 readme = "README.md"
 license = "MIT"

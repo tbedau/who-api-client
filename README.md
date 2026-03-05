@@ -19,34 +19,51 @@ An **unofficial**, community-built Python client and CLI for the [WHO Classifica
 ## Requirements
 
 - Python >= 3.10
-- [uv](https://docs.astral.sh/uv/) package manager
 - A [WHO Classification of Tumours](https://tumourclassification.iarc.who.int/) account with valid credentials
 
 ## Installation
 
+Install globally as a CLI tool:
+
 ```bash
-git clone https://github.com/tbedau/who-api-client.git
-cd who-api-client
-uv sync
+uv tool install who-api-client
+```
+
+Or run directly without installing:
+
+```bash
+uvx who-api-client --help
+```
+
+As a project dependency:
+
+```bash
+uv add who-api-client
+```
+
+Or with pip:
+
+```bash
+pip install who-api-client
 ```
 
 ## Quick Start
 
 ```bash
 # 1. Authenticate (interactive prompt)
-uv run who-api-client login
+who-api-client login
 
 # 2. Browse the catalogue
-uv run who-api-client series
-uv run who-api-client books
-uv run who-api-client chapters 31
+who-api-client series
+who-api-client books
+who-api-client chapters 31
 
 # 3. Read content
-uv run who-api-client content 31 11
-uv run who-api-client attachments 31 11
+who-api-client content 31 11
+who-api-client attachments 31 11
 
 # 4. Search
-uv run who-api-client search "adenocarcinoma"
+who-api-client search "adenocarcinoma"
 ```
 
 ## Authentication
@@ -59,22 +76,22 @@ The client checks for credentials in this order:
 
 ```bash
 # Interactive login (saves to system keyring)
-uv run who-api-client login
+who-api-client login
 
 # Provide credentials directly
-uv run who-api-client login --email you@example.com --password secret
+who-api-client login --email you@example.com --password secret
 
 # Save to .env file instead of keyring
-uv run who-api-client login --save-to-env
+who-api-client login --save-to-env
 
 # Check authentication status
-uv run who-api-client status
+who-api-client status
 
 # View your profile and subscription
-uv run who-api-client profile
+who-api-client profile
 
 # Remove stored credentials
-uv run who-api-client logout
+who-api-client logout
 ```
 
 ## CLI Reference
@@ -108,43 +125,43 @@ uv run who-api-client logout
 
 ```bash
 # List all book series
-uv run who-api-client series
+who-api-client series
 
 # List books as JSON
-uv run who-api-client books --format json
+who-api-client books --format json
 
 # Browse chapter tree, limit depth
-uv run who-api-client chapters 31 --max-depth 2
+who-api-client chapters 31 --max-depth 2
 
 # Read chapter content
-uv run who-api-client content 31 11
+who-api-client content 31 11
 
 # View raw HTML content
-uv run who-api-client content 31 11 --format html
+who-api-client content 31 11 --format html
 
 # List only figure attachments
-uv run who-api-client attachments 31 11 --type figure
+who-api-client attachments 31 11 --type figure
 
 # Render tables as markdown
-uv run who-api-client tables 31 11
+who-api-client tables 31 11
 
 # Download all figures from a chapter
-uv run who-api-client download-images 31 11 --output ./images/
+who-api-client download-images 31 11 --output ./images/
 
 # Show chapter breadcrumb path
-uv run who-api-client ancestors 31 11
+who-api-client ancestors 31 11
 
 # View favourites sorted by chapter
-uv run who-api-client favourites --sort chapter
+who-api-client favourites --sort chapter
 
 # Search specific books for a term
-uv run who-api-client search "carcinoma" --books 31,32
+who-api-client search "carcinoma" --books 31,32
 
 # Search in headings and content
-uv run who-api-client search "melanoma" --headings --content
+who-api-client search "melanoma" --headings --content
 
 # Search only headings (exclude chapters)
-uv run who-api-client search "sarcoma" --no-chapters --headings
+who-api-client search "sarcoma" --no-chapters --headings
 ```
 
 ## Python API
@@ -261,7 +278,9 @@ The client automatically retries on transient failures with exponential backoff,
 ## Development
 
 ```bash
-# Install with dev dependencies
+# Clone and install with dev dependencies
+git clone https://github.com/tbedau/who-api-client.git
+cd who-api-client
 uv sync
 
 # Run unit tests
