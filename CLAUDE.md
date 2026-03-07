@@ -31,6 +31,7 @@ uv run pytest --cov=who_api_client  # Coverage report
 uv run ruff check                # Lint
 uv run ruff format               # Format
 uv run ruff check --fix          # Auto-fix
+uv run ty check                  # Type check (tests excluded via pyproject.toml)
 ```
 
 ### CLI Usage
@@ -104,7 +105,7 @@ BookSeries -> Book -> Chapter -> ChapterContent
 ## Dependencies
 
 Runtime: `cryptography`, `httpx`, `pydantic[email]`, `typer`, `rich`, `keyring`, `python-dotenv`
-Dev: `pytest`, `pytest-mock`, `pytest-cov`, `ruff`
+Dev: `pytest`, `pytest-mock`, `pytest-cov`, `ruff`, `ty`
 
 ## Common Development Tasks
 

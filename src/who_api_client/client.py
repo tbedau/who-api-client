@@ -178,7 +178,7 @@ class WHOAPIClient:
         if not verification_token:
             raise AuthenticationError("Could not obtain verification token from API")
 
-        headers = self.session.headers.copy()
+        headers = dict(self.session.headers)
         headers["RequestVerificationToken"] = verification_token
         return headers
 

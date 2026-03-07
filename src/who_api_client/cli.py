@@ -1408,7 +1408,7 @@ def search(
                 scope_parts.append("content")
 
             book_scope = (
-                f"books {', '.join(map(str, parsed_book_ids))}"
+                f"books {', '.join(str(b) for b in parsed_book_ids)}"
                 if parsed_book_ids
                 else "all books"
             )

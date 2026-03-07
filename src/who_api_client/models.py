@@ -11,7 +11,7 @@ class _TableHTMLParser(HTMLParser):
 
     def __init__(self):
         super().__init__()
-        self.rows: list[list[str]] = []
+        self.rows: list[list[tuple[str, int, int]]] = []
         self._current_row: list[tuple[str, int, int]] = []  # (text, colspan, rowspan)
         self._current_text: list[str] = []
         self._in_cell = False
@@ -24,8 +24,8 @@ class _TableHTMLParser(HTMLParser):
             self._in_cell = True
             self._current_text = []
             attr_dict = dict(attrs)
-            self._colspan = int(attr_dict.get("colspan", "1"))
-            self._rowspan = int(attr_dict.get("rowspan", "1"))
+            self._colspan = int(attr_dict.get("colspan") or "1")
+            self._rowspan = int(attr_dict.get("rowspan") or "1")
         elif tag == "tr":
             self._current_row = []
         elif tag == "br" and self._in_cell:
