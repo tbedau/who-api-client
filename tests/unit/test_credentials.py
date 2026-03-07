@@ -207,12 +207,14 @@ class TestCredentialManager:
 
     @pytest.mark.unit
     def test_clear_credentials(self, cred_manager, tmp_config):
-        """Test clearing credentials removes encrypted file."""
+        """Test clearing credentials removes encrypted file and key."""
         cred_manager.save_credentials("test@example.com", "testpass")
         assert tmp_config["creds_file"].exists()
+        assert tmp_config["key_file"].exists()
 
         cred_manager.clear_credentials()
         assert not tmp_config["creds_file"].exists()
+        assert not tmp_config["key_file"].exists()
 
     @pytest.mark.unit
     def test_clear_credentials_when_none_exist(self, cred_manager):

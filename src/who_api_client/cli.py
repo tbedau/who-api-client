@@ -812,7 +812,6 @@ def download_images(
 @app.command()
 def login(
     email: str = typer.Option(None, "--email", "-e", help="WHO account email"),
-    password: str = typer.Option(None, "--password", "-p", help="WHO account password"),
     use_keyring: bool = typer.Option(
         False,
         "--use-keyring",
@@ -827,7 +826,9 @@ def login(
     """
     Authenticate with WHO API and save credentials.
 
-    If email/password are not provided, you'll be prompted interactively.
+    If email is not provided via --email, you'll be prompted interactively.
+    Password is always entered interactively for security (use WHO_PASSWORD
+    env var for non-interactive use).
     Credentials are encrypted and saved to ~/.config/who-api-client/ by default.
     """
     cred_manager = CredentialManager()
@@ -836,22 +837,16 @@ def login(
     if not email:
         email = typer.prompt("WHO Email")
 
-    if not password:
-        password = getpass.getpass("WHO Password: ")
+    password = getpass.getpass("WHO Password: ")
 
     # Test credentials by attempting authentication
     rprint("[bold blue]Testing credentials...[/bold blue]")
 
     try:
         with WHOAPIClient() as client:
-            # Temporarily set credentials for testing
-            import os
-
-            os.environ["WHO_EMAIL"] = email
-            os.environ["WHO_PASSWORD"] = password
-
-            # Try to authenticate
-            client._authenticate()
+            result = client._perform_login(email, password)
+            if not result.success:
+                raise AuthenticationError(f"Authentication failed: {result.message}")
 
             # Determine storage backend
             if save_to_env:
@@ -873,10 +868,6 @@ def login(
                 "[bold green]✓ Successfully authenticated and saved credentials![/bold green]"
             )
             rprint(f"[dim]Credentials stored in: {storage_label}[/dim]")
-
-            # Clear temporary environment variables
-            del os.environ["WHO_EMAIL"]
-            del os.environ["WHO_PASSWORD"]
 
     except AuthenticationError as e:
         rprint(f"[bold red]Authentication failed: {e}[/bold red]")

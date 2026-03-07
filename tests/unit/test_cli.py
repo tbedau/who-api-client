@@ -42,7 +42,9 @@ class TestCLICommands:
         mock_client = Mock()
         mock_client.__enter__ = Mock(return_value=mock_client)
         mock_client.__exit__ = Mock(return_value=None)
-        mock_client._authenticate = Mock()
+        mock_client._perform_login = Mock(
+            return_value=Mock(success=True, message="Login successful")
+        )
         mock_client_class.return_value = mock_client
 
         # Mock getpass to return a test password
@@ -55,16 +57,24 @@ class TestCLICommands:
         assert "Testing credentials..." in result.stdout
         assert "Successfully authenticated" in result.stdout
 
+        # Verify _perform_login was called with the right credentials
+        mock_client._perform_login.assert_called_once_with(
+            "test@example.com", "testpass"
+        )
+
         # Verify credentials were saved to config file (default)
         mock_cred_manager.save_credentials.assert_called_once_with(
             "test@example.com", "testpass", backend="config_file"
         )
 
     @pytest.mark.unit
+    @patch("who_api_client.cli.getpass.getpass")
     @patch("who_api_client.cli.CredentialManager")
     @patch("who_api_client.cli.WHOAPIClient")
-    def test_login_with_flags(self, mock_client_class, mock_cred_manager_class, runner):
-        """Test login command with email and password flags."""
+    def test_login_with_email_flag(
+        self, mock_client_class, mock_cred_manager_class, mock_getpass, runner
+    ):
+        """Test login command with --email flag (password always via getpass)."""
         # Setup mocks
         mock_cred_manager = Mock()
         mock_cred_manager_class.return_value = mock_cred_manager
@@ -72,22 +82,25 @@ class TestCLICommands:
         mock_client = Mock()
         mock_client.__enter__ = Mock(return_value=mock_client)
         mock_client.__exit__ = Mock(return_value=None)
-        mock_client._authenticate = Mock()
+        mock_client._perform_login = Mock(
+            return_value=Mock(success=True, message="Login successful")
+        )
         mock_client_class.return_value = mock_client
 
-        result = runner.invoke(
-            app, ["login", "--email", "test@example.com", "--password", "testpass"]
-        )
+        mock_getpass.return_value = "testpass"
+
+        result = runner.invoke(app, ["login", "--email", "test@example.com"])
 
         assert result.exit_code == 0
         assert "Testing credentials..." in result.stdout
         assert "Successfully authenticated" in result.stdout
 
     @pytest.mark.unit
+    @patch("who_api_client.cli.getpass.getpass")
     @patch("who_api_client.cli.CredentialManager")
     @patch("who_api_client.cli.WHOAPIClient")
     def test_login_save_to_env(
-        self, mock_client_class, mock_cred_manager_class, runner
+        self, mock_client_class, mock_cred_manager_class, mock_getpass, runner
     ):
         """Test login command with --save-to-env flag."""
         # Setup mocks
@@ -97,8 +110,12 @@ class TestCLICommands:
         mock_client = Mock()
         mock_client.__enter__ = Mock(return_value=mock_client)
         mock_client.__exit__ = Mock(return_value=None)
-        mock_client._authenticate = Mock()
+        mock_client._perform_login = Mock(
+            return_value=Mock(success=True, message="Login successful")
+        )
         mock_client_class.return_value = mock_client
+
+        mock_getpass.return_value = "testpass"
 
         result = runner.invoke(
             app,
@@ -106,8 +123,6 @@ class TestCLICommands:
                 "login",
                 "--email",
                 "test@example.com",
-                "--password",
-                "testpass",
                 "--save-to-env",
             ],
         )
@@ -121,10 +136,11 @@ class TestCLICommands:
         )
 
     @pytest.mark.unit
+    @patch("who_api_client.cli.getpass.getpass")
     @patch("who_api_client.cli.CredentialManager")
     @patch("who_api_client.cli.WHOAPIClient")
     def test_login_authentication_failure(
-        self, mock_client_class, mock_cred_manager_class, runner
+        self, mock_client_class, mock_cred_manager_class, mock_getpass, runner
     ):
         """Test login command with authentication failure."""
         # Setup mocks
@@ -134,14 +150,14 @@ class TestCLICommands:
         mock_client = Mock()
         mock_client.__enter__ = Mock(return_value=mock_client)
         mock_client.__exit__ = Mock(return_value=None)
-        mock_client._authenticate = Mock(
-            side_effect=AuthenticationError("Invalid credentials")
+        mock_client._perform_login = Mock(
+            return_value=Mock(success=False, message="Invalid credentials")
         )
         mock_client_class.return_value = mock_client
 
-        result = runner.invoke(
-            app, ["login", "--email", "bad@example.com", "--password", "wrongpass"]
-        )
+        mock_getpass.return_value = "wrongpass"
+
+        result = runner.invoke(app, ["login", "--email", "bad@example.com"])
 
         assert result.exit_code == 1
         assert "Authentication failed" in result.stdout
