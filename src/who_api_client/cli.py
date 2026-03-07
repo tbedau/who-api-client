@@ -1,7 +1,6 @@
 import getpass
 
 import typer
-from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
@@ -16,6 +15,7 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 console = Console()
+err_console = Console(stderr=True)
 
 
 @app.callback(invoke_without_command=True)
@@ -50,12 +50,12 @@ def series(
     """
     try:
         with WHOAPIClient() as client:
-            rprint("[bold blue]Fetching book series...[/bold blue]")
+            err_console.print("[bold blue]Fetching book series...[/bold blue]")
 
             # Get book series - authentication happens automatically via decorator
             book_series = client.get_book_series()
 
-            rprint(f"[green]Found {book_series.count} book series![/green]")
+            err_console.print(f"[green]Found {book_series.count} book series![/green]")
 
             if format.lower() == "json":
                 # Output as JSON
@@ -84,13 +84,13 @@ def series(
                 console.print(table)
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
-        rprint("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to fetch book series: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to fetch book series: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -107,11 +107,11 @@ def books(
     """
     try:
         with WHOAPIClient() as client:
-            rprint("[bold blue]Fetching all books...[/bold blue]")
+            err_console.print("[bold blue]Fetching all books...[/bold blue]")
 
             books = client.get_books()
 
-            rprint(f"[green]Found {len(books)} books![/green]")
+            err_console.print(f"[green]Found {len(books)} books![/green]")
 
             if format.lower() == "json":
                 # Output as JSON
@@ -145,13 +145,13 @@ def books(
                 console.print(table)
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
-        rprint("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to fetch books: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to fetch books: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -172,13 +172,13 @@ def chapters(
     """
     try:
         with WHOAPIClient() as client:
-            rprint(f"[bold blue]Fetching chapters for book ID {book_id}...[/bold blue]")
+            err_console.print(f"[bold blue]Fetching chapters for book ID {book_id}...[/bold blue]")
 
             # Verify book exists
             try:
                 book = client.get_book(book_id)
             except Exception:
-                rprint(f"[bold red]Book with ID {book_id} not found[/bold red]")
+                err_console.print(f"[bold red]Book with ID {book_id} not found[/bold red]")
                 raise typer.Exit(1) from None
 
             chapters = client.get_chapters(book_id)
@@ -194,7 +194,7 @@ def chapters(
 
             count_chapters(chapters)
 
-            rprint(
+            err_console.print(
                 f"[green]Found {len(chapters)} top-level chapters ({total_chapters} total) for '{book.bookTitle}'[/green]"
             )
 
@@ -254,13 +254,13 @@ def chapters(
                 print_chapters(chapters)
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
-        rprint("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to fetch chapters: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to fetch chapters: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -280,7 +280,7 @@ def ancestors(
     """
     try:
         with WHOAPIClient() as client:
-            rprint(
+            err_console.print(
                 f"[bold blue]Fetching ancestors for chapter {chapter_id} in book {book_id}...[/bold blue]"
             )
 
@@ -288,18 +288,18 @@ def ancestors(
             try:
                 book = client.get_book(book_id)
             except Exception:
-                rprint(f"[bold red]Book with ID {book_id} not found[/bold red]")
+                err_console.print(f"[bold red]Book with ID {book_id} not found[/bold red]")
                 raise typer.Exit(1) from None
 
             ancestors = client.get_chapter_ancestors(book_id, chapter_id)
 
             if not ancestors:
-                rprint(
+                err_console.print(
                     f"[yellow]No ancestors found for chapter {chapter_id} (it may be a root chapter)[/yellow]"
                 )
                 raise typer.Exit(0)
 
-            rprint(
+            err_console.print(
                 f"[green]Found {len(ancestors)} ancestors for chapter in '{book.bookTitle}'[/green]"
             )
 
@@ -348,13 +348,13 @@ def ancestors(
                     )
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
-        rprint("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to fetch ancestors: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to fetch ancestors: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -363,10 +363,16 @@ def content(
     book_id: int = typer.Argument(..., help="Book ID"),
     chapter_id: int = typer.Argument(..., help="Chapter ID"),
     format: str = typer.Option(
-        "text", "--format", "-f", help="Output format: text, html, json"
+        "text", "--format", "-f", help="Output format: text, markdown, html, json"
     ),
     max_sections: int = typer.Option(
         None, "--max-sections", "-m", help="Maximum number of sections to display"
+    ),
+    sections: str = typer.Option(
+        None,
+        "--sections",
+        "-s",
+        help="Comma-separated section names to include (e.g. 'Definition,Histopathology,Essential and desirable diagnostic criteria')",
     ),
 ):
     """
@@ -377,7 +383,7 @@ def content(
     """
     try:
         with WHOAPIClient() as client:
-            rprint(
+            err_console.print(
                 f"[bold blue]Fetching content for chapter {chapter_id} in book {book_id}...[/bold blue]"
             )
 
@@ -385,7 +391,7 @@ def content(
             try:
                 book = client.get_book(book_id)
             except Exception:
-                rprint(f"[bold red]Book with ID {book_id} not found[/bold red]")
+                err_console.print(f"[bold red]Book with ID {book_id} not found[/bold red]")
                 raise typer.Exit(1) from None
 
             # Get chapter ancestors for context
@@ -400,14 +406,28 @@ def content(
             content_sections = client.get_chapter_content(book_id, chapter_id)
 
             if not content_sections:
-                rprint(f"[yellow]No content found for chapter {chapter_id}[/yellow]")
+                err_console.print(f"[yellow]No content found for chapter {chapter_id}[/yellow]")
                 raise typer.Exit(0)
+
+            # Filter by section names if requested
+            if sections:
+                section_names = [s.strip().lower() for s in sections.split(",")]
+                content_sections = [
+                    s
+                    for s in content_sections
+                    if s.headingTitle.lower() in section_names
+                ]
+                if not content_sections:
+                    err_console.print(
+                        f"[yellow]No matching sections found. Available: {', '.join(s.headingTitle for s in client.get_chapter_content(book_id, chapter_id) if s.headingTitle)}[/yellow]"
+                    )
+                    raise typer.Exit(0)
 
             sections_to_show = (
                 content_sections[:max_sections] if max_sections else content_sections
             )
 
-            rprint(
+            err_console.print(
                 f"[green]Found {len(content_sections)} content sections for '{chapter_title}' in '{book.bookTitle}'[/green]"
             )
 
@@ -417,6 +437,34 @@ def content(
 
                 sections_data = [section.model_dump() for section in sections_to_show]
                 console.print_json(json.dumps(sections_data))
+            elif format.lower() == "markdown":
+                # Markdown format - clean, pipe-friendly, no Rich formatting
+                import html as html_mod
+                import re
+
+                print(f"# {chapter_title}")
+                print(f"*{book.bookTitle}*\n")
+
+                for i, section in enumerate(sections_to_show):
+                    if section.headingTitle:
+                        print(f"## {section.headingTitle}\n")
+
+                    for contrib in section.contributions:
+                        clean_text = re.sub("<[^<]+?>", "", contrib.headingText).strip()
+                        clean_text = html_mod.unescape(clean_text)
+                        clean_text = clean_text.replace("\u00a0", " ")
+                        # Preserve paragraph breaks
+                        clean_text = re.sub(r"\r\n", "\n", clean_text)
+                        clean_text = re.sub(r"\n{3,}", "\n\n", clean_text)
+                        # Normalize spaces within lines but preserve newlines
+                        lines = clean_text.split("\n")
+                        lines = [re.sub(r"[ \t]+", " ", line).strip() for line in lines]
+                        clean_text = "\n".join(lines)
+                        if clean_text:
+                            print(clean_text)
+
+                    if i < len(sections_to_show) - 1:
+                        print()
             elif format.lower() == "html":
                 # Output as HTML
                 console.print(f"[bold]Content for: {chapter_title}[/bold]")
@@ -476,13 +524,13 @@ def content(
                     )
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
-        rprint("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to fetch content: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to fetch content: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -505,7 +553,7 @@ def attachments(
     """
     try:
         with WHOAPIClient() as client:
-            rprint(
+            err_console.print(
                 f"[bold blue]Fetching attachments for chapter {chapter_id} in book {book_id}...[/bold blue]"
             )
 
@@ -513,7 +561,7 @@ def attachments(
             try:
                 book = client.get_book(book_id)
             except Exception:
-                rprint(f"[bold red]Book with ID {book_id} not found[/bold red]")
+                err_console.print(f"[bold red]Book with ID {book_id} not found[/bold red]")
                 raise typer.Exit(1) from None
 
             # Get chapter ancestors for context
@@ -528,7 +576,7 @@ def attachments(
             attachments = client.get_attachments(book_id, chapter_id)
 
             if not attachments:
-                rprint(
+                err_console.print(
                     f"[yellow]No attachments found for chapter {chapter_id}[/yellow]"
                 )
                 raise typer.Exit(0)
@@ -544,7 +592,7 @@ def attachments(
                 # "all" or any other value shows all attachments
 
             if not attachments:
-                rprint(
+                err_console.print(
                     f"[yellow]No {type_filter} attachments found for chapter {chapter_id}[/yellow]"
                 )
                 raise typer.Exit(0)
@@ -554,10 +602,10 @@ def attachments(
             wsi = [a for a in attachments if a.is_wsi]
             tables = [a for a in attachments if a.is_table]
 
-            rprint(
+            err_console.print(
                 f"[green]Found {len(attachments)} attachments for '{chapter_title}' in '{book.bookTitle}'[/green]"
             )
-            rprint(
+            err_console.print(
                 f"[dim]📷 {len(figures)} figures, 🔬 {len(wsi)} WSI, 📊 {len(tables)} tables[/dim]"
             )
 
@@ -632,13 +680,13 @@ def attachments(
                         )
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
-        rprint("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to fetch attachments: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to fetch attachments: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -658,7 +706,7 @@ def tables(
     """
     try:
         with WHOAPIClient() as client:
-            rprint(
+            err_console.print(
                 f"[bold blue]Fetching tables for chapter {chapter_id} in book {book_id}...[/bold blue]"
             )
 
@@ -666,7 +714,7 @@ def tables(
             try:
                 book = client.get_book(book_id)
             except Exception:
-                rprint(f"[bold red]Book with ID {book_id} not found[/bold red]")
+                err_console.print(f"[bold red]Book with ID {book_id} not found[/bold red]")
                 raise typer.Exit(1) from None
 
             # Get chapter ancestors for context
@@ -682,10 +730,10 @@ def tables(
             table_attachments = [a for a in all_attachments if a.is_table]
 
             if not table_attachments:
-                rprint(f"[yellow]No tables found for chapter {chapter_id}[/yellow]")
+                err_console.print(f"[yellow]No tables found for chapter {chapter_id}[/yellow]")
                 raise typer.Exit(0)
 
-            rprint(
+            err_console.print(
                 f"[green]Found {len(table_attachments)} tables for '{chapter_title}' in '{book.bookTitle}'[/green]\n"
             )
 
@@ -714,13 +762,13 @@ def tables(
                         console.print(f"\n[dim]Source: {attachment.clean_source}[/dim]")
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
-        rprint("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to fetch tables: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to fetch tables: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -746,7 +794,7 @@ def download_images(
     """
     try:
         with WHOAPIClient() as client:
-            rprint(
+            err_console.print(
                 f"[bold blue]Downloading images from chapter {chapter_id} in book {book_id}...[/bold blue]"
             )
 
@@ -754,7 +802,7 @@ def download_images(
             try:
                 book = client.get_book(book_id)
             except Exception:
-                rprint(f"[bold red]Book with ID {book_id} not found[/bold red]")
+                err_console.print(f"[bold red]Book with ID {book_id} not found[/bold red]")
                 raise typer.Exit(1) from None
 
             # Get chapter title for context
@@ -766,9 +814,9 @@ def download_images(
             except Exception:
                 chapter_title = f"Chapter {chapter_id}"
 
-            rprint(f"[dim]Book: {book.bookTitle}[/dim]")
-            rprint(f"[dim]Chapter: {chapter_title}[/dim]")
-            rprint(f"[dim]Output: {output_dir}[/dim]\n")
+            err_console.print(f"[dim]Book: {book.bookTitle}[/dim]")
+            err_console.print(f"[dim]Chapter: {chapter_title}[/dim]")
+            err_console.print(f"[dim]Output: {output_dir}[/dim]\n")
 
             # Download images
             stats = client.download_chapter_images(
@@ -776,36 +824,36 @@ def download_images(
             )
 
             # Display results
-            rprint("\n[bold green]Download Complete![/bold green]")
-            rprint(f"[green]✓ Downloaded: {stats['downloaded']} figures[/green]")
+            err_console.print("\n[bold green]Download Complete![/bold green]")
+            err_console.print(f"[green]✓ Downloaded: {stats['downloaded']} figures[/green]")
 
             if stats["skipped_wsi"] > 0:
-                rprint(
+                err_console.print(
                     f"[yellow]⊘ Skipped: {stats['skipped_wsi']} WSI (DeepZoom format not supported)[/yellow]"
                 )
 
             if stats["skipped_tables"] > 0:
-                rprint(f"[yellow]⊘ Skipped: {stats['skipped_tables']} tables[/yellow]")
+                err_console.print(f"[yellow]⊘ Skipped: {stats['skipped_tables']} tables[/yellow]")
 
             if stats["errors"] > 0:
-                rprint(f"[red]✗ Errors: {stats['errors']} failed downloads[/red]")
+                err_console.print(f"[red]✗ Errors: {stats['errors']} failed downloads[/red]")
 
             if stats["downloaded"] == 0:
-                rprint(
+                err_console.print(
                     "\n[yellow]No figures were downloaded. This chapter may only contain WSI or tables.[/yellow]"
                 )
-                rprint(
+                err_console.print(
                     "[dim]Use 'who-api-client attachments' to see all attachment types.[/dim]"
                 )
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
-        rprint("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to download images: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to download images: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -840,7 +888,7 @@ def login(
     password = getpass.getpass("WHO Password: ")
 
     # Test credentials by attempting authentication
-    rprint("[bold blue]Testing credentials...[/bold blue]")
+    err_console.print("[bold blue]Testing credentials...[/bold blue]")
 
     try:
         with WHOAPIClient() as client:
@@ -861,20 +909,20 @@ def login(
 
                 storage_label = f"config file ({_get_credentials_file()})"
 
-            rprint(f"[bold blue]Saving credentials to {storage_label}...[/bold blue]")
+            err_console.print(f"[bold blue]Saving credentials to {storage_label}...[/bold blue]")
 
             cred_manager.save_credentials(email, password, backend=backend)
-            rprint(
+            err_console.print(
                 "[bold green]✓ Successfully authenticated and saved credentials![/bold green]"
             )
-            rprint(f"[dim]Credentials stored in: {storage_label}[/dim]")
+            err_console.print(f"[dim]Credentials stored in: {storage_label}[/dim]")
 
     except AuthenticationError as e:
-        rprint(f"[bold red]Authentication failed: {e}[/bold red]")
-        rprint("[dim]Please check your email and password and try again.[/dim]")
+        err_console.print(f"[bold red]Authentication failed: {e}[/bold red]")
+        err_console.print("[dim]Please check your email and password and try again.[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Error: {e}[/bold red]")
+        err_console.print(f"[bold red]Error: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -887,25 +935,25 @@ def logout(
 
     if debug:
         info = cred_manager.debug_info()
-        rprint("[bold cyan]Debug Information:[/bold cyan]")
+        err_console.print("[bold cyan]Debug Information:[/bold cyan]")
         for key, value in info.items():
-            rprint(f"  {key}: {value}")
+            err_console.print(f"  {key}: {value}")
 
     if not cred_manager.has_credentials():
-        rprint("[yellow]No credentials found to remove.[/yellow]")
+        err_console.print("[yellow]No credentials found to remove.[/yellow]")
         raise typer.Exit(0)
 
     source = cred_manager.get_credential_source()
 
     if source == "environment variables":
-        rprint(
+        err_console.print(
             f"[yellow]Credentials are stored in {source}. Please remove them manually.[/yellow]"
         )
     elif source == ".env file":
-        rprint(
+        err_console.print(
             f"[yellow]Credentials are stored in {source}. Please remove them manually.[/yellow]"
         )
-        rprint(
+        err_console.print(
             "[dim]You can delete the WHO_EMAIL and WHO_PASSWORD lines from your .env file.[/dim]"
         )
     else:
@@ -913,12 +961,12 @@ def logout(
         if confirm:
             try:
                 cred_manager.clear_credentials()
-                rprint("[bold green]✓ Credentials removed.[/bold green]")
+                err_console.print("[bold green]✓ Credentials removed.[/bold green]")
             except RuntimeError as e:
-                rprint(f"[bold red]Failed to remove credentials: {e}[/bold red]")
+                err_console.print(f"[bold red]Failed to remove credentials: {e}[/bold red]")
                 raise typer.Exit(1) from None
         else:
-            rprint("[yellow]Logout cancelled.[/yellow]")
+            err_console.print("[yellow]Logout cancelled.[/yellow]")
 
 
 @app.command()
@@ -927,37 +975,37 @@ def status():
     cred_manager = CredentialManager()
 
     if not cred_manager.has_credentials():
-        rprint("[bold red]✗ No credentials found[/bold red]")
-        rprint("\n[dim]To authenticate, run:[/dim]")
-        rprint("  [cyan]who-api-client login[/cyan]")
+        err_console.print("[bold red]✗ No credentials found[/bold red]")
+        err_console.print("\n[dim]To authenticate, run:[/dim]")
+        err_console.print("  [cyan]who-api-client login[/cyan]")
         raise typer.Exit(1)
 
     source = cred_manager.get_credential_source()
     email, _ = cred_manager.get_credentials()
 
-    rprint("[bold green]✓ Credentials found[/bold green]")
-    rprint(f"[bold]Email:[/bold] {email}")
-    rprint(f"[bold]Source:[/bold] {source}")
+    err_console.print("[bold green]✓ Credentials found[/bold green]")
+    err_console.print(f"[bold]Email:[/bold] {email}")
+    err_console.print(f"[bold]Source:[/bold] {source}")
 
     # Test authentication
-    rprint("\n[bold blue]Testing authentication...[/bold blue]")
+    err_console.print("\n[bold blue]Testing authentication...[/bold blue]")
 
     try:
         with WHOAPIClient() as client:
             # This will trigger authentication
             book_series = client.get_book_series()
-            rprint("[bold green]✓ Authentication successful![/bold green]")
-            rprint(
+            err_console.print("[bold green]✓ Authentication successful![/bold green]")
+            err_console.print(
                 f"[dim]Connected to WHO API - found {book_series.count} book series[/dim]"
             )
     except AuthenticationError as e:
-        rprint(f"[bold red]✗ Authentication failed: {e}[/bold red]")
-        rprint(
+        err_console.print(f"[bold red]✗ Authentication failed: {e}[/bold red]")
+        err_console.print(
             "[dim]Your credentials may be incorrect or expired. Try logging in again.[/dim]"
         )
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]✗ Connection error: {e}[/bold red]")
+        err_console.print(f"[bold red]✗ Connection error: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -972,7 +1020,7 @@ def profile(
     """
     try:
         with WHOAPIClient() as client:
-            rprint("[bold blue]Fetching current user details...[/bold blue]")
+            err_console.print("[bold blue]Fetching current user details...[/bold blue]")
 
             user = client.get_user_details()
 
@@ -1024,20 +1072,20 @@ def profile(
                 if user.subscriptionRenewalUrl and "day(s)" in user.subscriptionEndsin:
                     days = int(user.subscriptionEndsin.split()[0])
                     if days < 30:
-                        rprint(
+                        err_console.print(
                             f"\n[bold yellow]⚠️  Your subscription expires in {days} days![/bold yellow]"
                         )
-                        rprint(f"[dim]Renewal URL: {user.subscriptionRenewalUrl}[/dim]")
+                        err_console.print(f"[dim]Renewal URL: {user.subscriptionRenewalUrl}[/dim]")
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
         raise typer.Exit(1) from None
     except AuthenticationError as e:
-        rprint(f"[bold red]Authentication error: {e}[/bold red]")
-        rprint("[dim]Try running 'who-api-client login' to authenticate first.[/dim]")
+        err_console.print(f"[bold red]Authentication error: {e}[/bold red]")
+        err_console.print("[dim]Try running 'who-api-client login' to authenticate first.[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Error: {e}[/bold red]")
+        err_console.print(f"[bold red]Error: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -1056,20 +1104,20 @@ def favourites(
     """
     try:
         with WHOAPIClient() as client:
-            rprint("[bold blue]Fetching your favourite chapters...[/bold blue]")
+            err_console.print("[bold blue]Fetching your favourite chapters...[/bold blue]")
 
             favourite_books = client.get_favourites()
 
             if not favourite_books:
-                rprint("[yellow]You don't have any favourite chapters yet.[/yellow]")
-                rprint(
+                err_console.print("[yellow]You don't have any favourite chapters yet.[/yellow]")
+                err_console.print(
                     "[dim]Add favourites through the WHO Classification web interface.[/dim]"
                 )
                 raise typer.Exit(0)
 
             # Count total favourites
             total_chapters = sum(len(book.chapters) for book in favourite_books)
-            rprint(
+            err_console.print(
                 f"[green]Found {total_chapters} favourite chapters across {len(favourite_books)} books[/green]\n"
             )
 
@@ -1152,16 +1200,16 @@ def favourites(
             )
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
         raise typer.Exit(1) from None
     except AuthenticationError as e:
-        rprint(f"[bold red]Authentication error: {e}[/bold red]")
-        rprint("[dim]Try running 'who-api-client login' to authenticate first.[/dim]")
+        err_console.print(f"[bold red]Authentication error: {e}[/bold red]")
+        err_console.print("[dim]Try running 'who-api-client login' to authenticate first.[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to fetch favourites: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to fetch favourites: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 
@@ -1209,7 +1257,10 @@ def search(
         help="Include chapter content results (default: False)",
     ),
     format: str = typer.Option(
-        "table", "--format", "-f", help="Output format: table, list, json"
+        "table",
+        "--format",
+        "-f",
+        help="Output format: table, compact, list, json. 'compact' deduplicates by chapter and outputs one line per chapter (ideal for piping).",
     ),
     max_results: int = typer.Option(
         50, "--max-results", "-m", help="Maximum number of results to display"
@@ -1225,6 +1276,7 @@ def search(
       who-api-client search "adenocarcinoma"
       who-api-client search "carcinoma" --books 31,32 --headings --content
       who-api-client search "melanoma" --no-chapters --headings --content
+      who-api-client search "GIST" --headings --content --format compact
     """
     try:
         with WHOAPIClient() as client:
@@ -1236,21 +1288,21 @@ def search(
                         int(book_id.strip()) for book_id in book_ids.split(",")
                     ]
                 except ValueError:
-                    rprint(
+                    err_console.print(
                         "[bold red]Error: Book IDs must be comma-separated integers[/bold red]"
                     )
-                    rprint("Example: --books 31,32,48")
+                    err_console.print("Example: --books 31,32,48")
                     raise typer.Exit(1) from None
 
             # Validate that at least one include option is enabled
             if not any([include_chapters, include_headings, include_content]):
-                rprint(
+                err_console.print(
                     "[bold red]Error: At least one search option must be enabled[/bold red]"
                 )
-                rprint("Use --chapters, --headings, and/or --content")
+                err_console.print("Use --chapters, --headings, and/or --content")
                 raise typer.Exit(1) from None
 
-            rprint(f"[bold blue]Searching for '{query}'...[/bold blue]")
+            err_console.print(f"[bold blue]Searching for '{query}'...[/bold blue]")
 
             # Show search scope
             scope_parts = []
@@ -1266,7 +1318,7 @@ def search(
                 if parsed_book_ids
                 else "all books"
             )
-            rprint(
+            err_console.print(
                 f"[dim]Searching in {', '.join(scope_parts)} across {book_scope}[/dim]"
             )
 
@@ -1280,8 +1332,8 @@ def search(
             )
 
             if not results.results:
-                rprint(f"[yellow]No results found for '{query}'[/yellow]")
-                rprint(
+                err_console.print(f"[yellow]No results found for '{query}'[/yellow]")
+                err_console.print(
                     "[dim]Try different search terms or enable more search options[/dim]"
                 )
                 raise typer.Exit(0)
@@ -1290,9 +1342,9 @@ def search(
             display_results = results.results[:max_results]
             total_results = len(results.results)
 
-            rprint(f"[green]Found {total_results} results![/green]")
+            err_console.print(f"[green]Found {total_results} results![/green]")
             if total_results > max_results:
-                rprint(
+                err_console.print(
                     f"[dim]Showing first {max_results} results (use --max-results to change)[/dim]"
                 )
 
@@ -1302,6 +1354,21 @@ def search(
 
                 results_data = [result.model_dump() for result in display_results]
                 console.print_json(json.dumps(results_data))
+            elif format.lower() == "compact":
+                # Compact format - one line per unique chapter, pipe-friendly
+                seen = {}
+                for result in display_results:
+                    key = (result.bookId, result.chapterId)
+                    if key not in seen:
+                        # Extract chapter title from the title path
+                        parts = result.title.split("/")
+                        ch_title = parts[1] if len(parts) > 1 else result.title
+                        # Strip section part if present
+                        ch_title = ch_title.split("/")[0].strip()
+                        seen[key] = (ch_title, result.headingType)
+                for (bid, cid), (title, htype) in seen.items():
+                    htype_label = "dedicated" if htype == 2 else "cross-ref"
+                    print(f"{bid}\t{cid}\t{htype_label}\t{title}")
             elif format.lower() == "list":
                 # Simple list format
                 for i, result in enumerate(display_results):
@@ -1348,22 +1415,22 @@ def search(
 
             # Show usage tip
             if total_results > 0:
-                console.print(
+                err_console.print(
                     "\n[dim]💡 Tip: Use 'who-api-client content <book_id> <chapter_id>' to view chapter content[/dim]"
                 )
 
     except ConfigurationError as e:
-        rprint(f"[bold red]Configuration error: {e}[/bold red]")
-        rprint("\n[bold yellow]First time using who-api-client?[/bold yellow]")
-        rprint("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
-        rprint("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
+        err_console.print(f"[bold red]Configuration error: {e}[/bold red]")
+        err_console.print("\n[bold yellow]First time using who-api-client?[/bold yellow]")
+        err_console.print("Run: [cyan]who-api-client login[/cyan] to set up your credentials")
+        err_console.print("\n[dim]Or set WHO_EMAIL and WHO_PASSWORD in your .env file[/dim]")
         raise typer.Exit(1) from None
     except AuthenticationError as e:
-        rprint(f"[bold red]Authentication error: {e}[/bold red]")
-        rprint("[dim]Try running 'who-api-client login' to authenticate first.[/dim]")
+        err_console.print(f"[bold red]Authentication error: {e}[/bold red]")
+        err_console.print("[dim]Try running 'who-api-client login' to authenticate first.[/dim]")
         raise typer.Exit(1) from None
     except Exception as e:
-        rprint(f"[bold red]Failed to perform search: {e}[/bold red]")
+        err_console.print(f"[bold red]Failed to perform search: {e}[/bold red]")
         raise typer.Exit(1) from e
 
 

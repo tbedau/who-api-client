@@ -117,14 +117,14 @@ who-api-client logout
 | `series` | | table, json | table |
 | `books` | | table, json | table |
 | `chapters` | `BOOK_ID` | tree, table, json | tree |
-| `content` | `BOOK_ID CHAPTER_ID` | text, html, json | text |
+| `content` | `BOOK_ID CHAPTER_ID` | text, markdown, html, json | text |
 | `attachments` | `BOOK_ID CHAPTER_ID` | list, json | list |
 | `tables` | `BOOK_ID CHAPTER_ID` | markdown, json | markdown |
 | `download-images` | `BOOK_ID CHAPTER_ID` | | |
 | `ancestors` | `BOOK_ID CHAPTER_ID` | tree, table, json | tree |
 | `favourites` | | tree, table, list, json | tree |
 | `favorites` | | *(alias for favourites)* | |
-| `search` | `QUERY` | table, list, json | table |
+| `search` | `QUERY` | table, compact, list, json | table |
 
 ### Examples
 
@@ -140,6 +140,12 @@ who-api-client chapters 31 --max-depth 2
 
 # Read chapter content
 who-api-client content 31 11
+
+# Clean markdown output (ideal for piping or LLM consumption)
+who-api-client content 31 11 --format markdown
+
+# Fetch only specific sections
+who-api-client content 31 11 --format markdown --sections "Definition,Histopathology"
 
 # View raw HTML content
 who-api-client content 31 11 --format html
@@ -164,6 +170,9 @@ who-api-client search "carcinoma" --books 31,32
 
 # Search in headings and content
 who-api-client search "melanoma" --headings --content
+
+# Compact output (one line per chapter, deduplicated, ideal for piping)
+who-api-client search "GIST" --headings --content --format compact
 
 # Search only headings (exclude chapters)
 who-api-client search "sarcoma" --no-chapters --headings

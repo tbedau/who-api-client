@@ -71,6 +71,9 @@ uv run who-api-client chapters 31
 - Data: series, books, chapters, content, attachments, tables, download-images, ancestors
 - User: favourites, favorites (alias), search
 - Each command has `--format` with command-specific options
+- Progress/status messages go to stderr (via `err_console`), data output goes to stdout
+- `content` supports `--format markdown` (clean text, no HTML) and `--sections` filtering
+- `search` supports `--format compact` (deduplicated, one line per chapter)
 
 **`exceptions.py`** - Exception hierarchy
 - `WHOAPIError` (base) -> `AuthenticationError`, `TokenError`, `ConfigurationError`
