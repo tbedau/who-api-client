@@ -12,6 +12,16 @@ from who_api_client.exceptions import AuthenticationError, ConfigurationError
 class TestCLICommands:
     """Test CLI commands."""
 
+    @pytest.fixture(autouse=True)
+    def _patch_err_console(self):
+        """Make err_console resolve sys.stderr dynamically for CliRunner capture."""
+        import who_api_client.cli as cli_mod
+
+        original_file = cli_mod.err_console._file
+        cli_mod.err_console._file = None
+        yield
+        cli_mod.err_console._file = original_file
+
     @pytest.fixture
     def runner(self):
         """Create a CLI test runner."""
@@ -22,10 +32,10 @@ class TestCLICommands:
         """Test main help command."""
         result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        assert "WHO Classification of Tumours API" in result.stdout
-        assert "login" in result.stdout
-        assert "logout" in result.stdout
-        assert "status" in result.stdout
+        assert "WHO Classification of Tumours API" in result.output
+        assert "login" in result.output
+        assert "logout" in result.output
+        assert "status" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.getpass.getpass")
@@ -54,8 +64,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["login"], input="test@example.com\n")
 
         assert result.exit_code == 0
-        assert "Testing credentials..." in result.stdout
-        assert "Successfully authenticated" in result.stdout
+        assert "Testing credentials..." in result.output
+        assert "Successfully authenticated" in result.output
 
         # Verify _perform_login was called with the right credentials
         mock_client._perform_login.assert_called_once_with(
@@ -92,8 +102,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["login", "--email", "test@example.com"])
 
         assert result.exit_code == 0
-        assert "Testing credentials..." in result.stdout
-        assert "Successfully authenticated" in result.stdout
+        assert "Testing credentials..." in result.output
+        assert "Successfully authenticated" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.getpass.getpass")
@@ -128,7 +138,7 @@ class TestCLICommands:
         )
 
         assert result.exit_code == 0
-        assert ".env file" in result.stdout
+        assert ".env file" in result.output
 
         # Verify credentials were saved to .env
         mock_cred_manager.save_credentials.assert_called_once_with(
@@ -160,8 +170,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["login", "--email", "bad@example.com"])
 
         assert result.exit_code == 1
-        assert "Authentication failed" in result.stdout
-        assert "Invalid credentials" in result.stdout
+        assert "Authentication failed" in result.output
+        assert "Invalid credentials" in result.output
 
         # Verify credentials were NOT saved
         mock_cred_manager.save_credentials.assert_not_called()
@@ -179,7 +189,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["logout"], input="y\n")
 
         assert result.exit_code == 0
-        assert "Credentials removed" in result.stdout
+        assert "Credentials removed" in result.output
         mock_cred_manager.clear_credentials.assert_called_once()
 
     @pytest.mark.unit
@@ -197,7 +207,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["logout"], input="n\n")
 
         assert result.exit_code == 0
-        assert "Logout cancelled" in result.stdout
+        assert "Logout cancelled" in result.output
         mock_cred_manager.clear_credentials.assert_not_called()
 
     @pytest.mark.unit
@@ -211,7 +221,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["logout"])
 
         assert result.exit_code == 0
-        assert "No credentials found to remove" in result.stdout
+        assert "No credentials found to remove" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.CredentialManager")
@@ -227,7 +237,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["logout"], input="y\n")
 
         assert result.exit_code == 0
-        assert "Credentials removed" in result.stdout
+        assert "Credentials removed" in result.output
         mock_cred_manager.clear_credentials.assert_called_once()
 
     @pytest.mark.unit
@@ -242,8 +252,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["logout"])
 
         assert result.exit_code == 0
-        assert "Credentials are stored in .env file" in result.stdout
-        assert "Please remove them manually" in result.stdout
+        assert "Credentials are stored in .env file" in result.output
+        assert "Please remove them manually" in result.output
         mock_cred_manager.clear_credentials.assert_not_called()
 
     @pytest.mark.unit
@@ -275,11 +285,11 @@ class TestCLICommands:
         result = runner.invoke(app, ["status"])
 
         assert result.exit_code == 0
-        assert "✓ Credentials found" in result.stdout
-        assert "test@example.com" in result.stdout
-        assert "system keyring" in result.stdout
-        assert "✓ Authentication successful!" in result.stdout
-        assert "found 2 book series" in result.stdout
+        assert "✓ Credentials found" in result.output
+        assert "test@example.com" in result.output
+        assert "system keyring" in result.output
+        assert "✓ Authentication successful!" in result.output
+        assert "found 2 book series" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.CredentialManager")
@@ -292,8 +302,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["status"])
 
         assert result.exit_code == 1
-        assert "✗ No credentials found" in result.stdout
-        assert "who-api-client login" in result.stdout
+        assert "✗ No credentials found" in result.output
+        assert "who-api-client login" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.CredentialManager")
@@ -321,9 +331,9 @@ class TestCLICommands:
         result = runner.invoke(app, ["status"])
 
         assert result.exit_code == 1
-        assert "✓ Credentials found" in result.stdout
-        assert "✗ Authentication failed" in result.stdout
-        assert "Invalid token" in result.stdout
+        assert "✓ Credentials found" in result.output
+        assert "✗ Authentication failed" in result.output
+        assert "Invalid token" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.CredentialManager")
@@ -347,7 +357,7 @@ class TestCLICommands:
         assert result.exit_code == 1
         # The error handling should guide users to login
         assert (
-            "login" in result.stdout.lower() or "login" in str(result.exception).lower()
+            "login" in result.output.lower() or "login" in str(result.exception).lower()
         )
 
     @pytest.mark.unit
@@ -382,11 +392,11 @@ class TestCLICommands:
         result = runner.invoke(app, ["profile"])
 
         assert result.exit_code == 0
-        assert "Fetching current user details" in result.stdout
-        assert "Test User" in result.stdout
-        assert "test@example.com" in result.stdout
-        assert "Researcher" in result.stdout
-        assert "Test University" in result.stdout
+        assert "Fetching current user details" in result.output
+        assert "Test User" in result.output
+        assert "test@example.com" in result.output
+        assert "Researcher" in result.output
+        assert "Test University" in result.output
         mock_client.get_user_details.assert_called_once_with()
 
     @pytest.mark.unit
@@ -410,9 +420,9 @@ class TestCLICommands:
         result = runner.invoke(app, ["profile", "--format", "json"])
 
         assert result.exit_code == 0
-        assert "Fetching current user details" in result.stdout
-        assert '"email": "test@example.com"' in result.stdout
-        assert '"name": "Test User"' in result.stdout
+        assert "Fetching current user details" in result.output
+        assert '"email": "test@example.com"' in result.output
+        assert '"name": "Test User"' in result.output
         mock_client.get_user_details.assert_called_once_with()
 
     @pytest.mark.unit
@@ -447,8 +457,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["profile"])
 
         assert result.exit_code == 0
-        assert "Your subscription expires in 15 days" in result.stdout
-        assert "https://shop.example.com/renew" in result.stdout
+        assert "Your subscription expires in 15 days" in result.output
+        assert "https://shop.example.com/renew" in result.output
 
     # ------------------------------------------------------------------ #
     # series command tests
@@ -478,10 +488,10 @@ class TestCLICommands:
         result = runner.invoke(app, ["series"])
 
         assert result.exit_code == 0
-        assert "Fetching book series" in result.stdout
-        assert "Found 1 book series" in result.stdout
-        assert "Test Series" in result.stdout
-        assert "Test Book" in result.stdout
+        assert "Fetching book series" in result.output
+        assert "Found 1 book series" in result.output
+        assert "Test Series" in result.output
+        assert "Test Book" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -501,8 +511,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["series", "--format", "json"])
 
         assert result.exit_code == 0
-        assert "Found 1 book series" in result.stdout
-        assert '"count": 1' in result.stdout
+        assert "Found 1 book series" in result.output
+        assert '"count": 1' in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -519,8 +529,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["series"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
 
     # ------------------------------------------------------------------ #
     # books command tests
@@ -546,9 +556,9 @@ class TestCLICommands:
         result = runner.invoke(app, ["books"])
 
         assert result.exit_code == 0
-        assert "Fetching all books" in result.stdout
-        assert "Found 1 books" in result.stdout
-        assert "Test Book" in result.stdout
+        assert "Fetching all books" in result.output
+        assert "Found 1 books" in result.output
+        assert "Test Book" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -577,8 +587,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["books", "--format", "json"])
 
         assert result.exit_code == 0
-        assert "Found 1 books" in result.stdout
-        assert '"bookTitle": "Test Book"' in result.stdout
+        assert "Found 1 books" in result.output
+        assert '"bookTitle": "Test Book"' in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -593,8 +603,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["books"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
 
     # ------------------------------------------------------------------ #
     # chapters command tests
@@ -608,6 +618,7 @@ class TestCLICommands:
         mock_book.bookTitle = "Test Book"
 
         mock_chapter = Mock()
+        mock_chapter.chapterId = 42
         mock_chapter.chapterNumber = "1"
         mock_chapter.chapterTitle = "Test Chapter"
         mock_chapter.chapterLevel = 1
@@ -624,9 +635,9 @@ class TestCLICommands:
         result = runner.invoke(app, ["chapters", "31"])
 
         assert result.exit_code == 0
-        assert "Fetching chapters for book ID 31" in result.stdout
-        assert "Test Book" in result.stdout
-        assert "Test Chapter" in result.stdout
+        assert "Fetching chapters for book ID 31" in result.output
+        assert "Test Book" in result.output
+        assert "Test Chapter" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -636,6 +647,7 @@ class TestCLICommands:
         mock_book.bookTitle = "Test Book"
 
         mock_chapter = Mock()
+        mock_chapter.chapterId = 42
         mock_chapter.chapterNumber = "1"
         mock_chapter.chapterTitle = "Test Chapter"
         mock_chapter.chapterLevel = 1
@@ -652,7 +664,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["chapters", "31", "--format", "table"])
 
         assert result.exit_code == 0
-        assert "Test Chapter" in result.stdout
+        assert "Test Chapter" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -662,6 +674,7 @@ class TestCLICommands:
         mock_book.bookTitle = "Test Book"
 
         mock_chapter = Mock()
+        mock_chapter.chapterId = 42
         mock_chapter.chapterNumber = "1"
         mock_chapter.chapterTitle = "Test Chapter"
         mock_chapter.chapterLevel = 1
@@ -684,7 +697,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["chapters", "31", "--format", "json"])
 
         assert result.exit_code == 0
-        assert '"chapterTitle": "Test Chapter"' in result.stdout
+        assert '"chapterTitle": "Test Chapter"' in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -700,8 +713,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["chapters", "31"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
 
     # ------------------------------------------------------------------ #
     # content command tests
@@ -735,9 +748,9 @@ class TestCLICommands:
         result = runner.invoke(app, ["content", "31", "11"])
 
         assert result.exit_code == 0
-        assert "Test Book" in result.stdout
-        assert "Introduction" in result.stdout
-        assert "Clean text" in result.stdout
+        assert "Test Book" in result.output
+        assert "Introduction" in result.output
+        assert "Clean text" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -767,8 +780,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["content", "31", "11", "--format", "html"])
 
         assert result.exit_code == 0
-        assert "Introduction" in result.stdout
-        assert "<p>Some HTML content</p>" in result.stdout
+        assert "Introduction" in result.output
+        assert "<p>Some HTML content</p>" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -802,7 +815,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["content", "31", "11", "--format", "json"])
 
         assert result.exit_code == 0
-        assert '"headingTitle": "Introduction"' in result.stdout
+        assert '"headingTitle": "Introduction"' in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -818,8 +831,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["content", "31", "11"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
 
     # ------------------------------------------------------------------ #
     # attachments command tests
@@ -860,9 +873,9 @@ class TestCLICommands:
         result = runner.invoke(app, ["attachments", "31", "11"])
 
         assert result.exit_code == 0
-        assert "Found 1 attachments" in result.stdout
-        assert "Fig 1" in result.stdout
-        assert "123" in result.stdout
+        assert "Found 1 attachments" in result.output
+        assert "Fig 1" in result.output
+        assert "123" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -904,7 +917,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["attachments", "31", "11", "--format", "json"])
 
         assert result.exit_code == 0
-        assert '"fileId": 123' in result.stdout
+        assert '"fileId": 123' in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -948,8 +961,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["attachments", "31", "11", "--type", "figure"])
 
         assert result.exit_code == 0
-        assert "Found 1 attachments" in result.stdout
-        assert "Fig 1" in result.stdout
+        assert "Found 1 attachments" in result.output
+        assert "Fig 1" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -965,8 +978,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["attachments", "31", "11"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
 
     # ------------------------------------------------------------------ #
     # tables command tests
@@ -1001,10 +1014,10 @@ class TestCLICommands:
         result = runner.invoke(app, ["tables", "31", "11"])
 
         assert result.exit_code == 0
-        assert "Found 1 tables" in result.stdout
-        assert "Table 1" in result.stdout
-        assert "| Col |" in result.stdout
-        assert "Source" in result.stdout
+        assert "Found 1 tables" in result.output
+        assert "Table 1" in result.output
+        assert "| Col |" in result.output
+        assert "Source" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1040,7 +1053,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["tables", "31", "11", "--format", "json"])
 
         assert result.exit_code == 0
-        assert '"type": "Table"' in result.stdout
+        assert '"type": "Table"' in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1056,8 +1069,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["tables", "31", "11"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
 
     # ------------------------------------------------------------------ #
     # download-images command tests
@@ -1089,9 +1102,9 @@ class TestCLICommands:
         result = runner.invoke(app, ["download-images", "31", "11"])
 
         assert result.exit_code == 0
-        assert "Download Complete" in result.stdout
-        assert "Downloaded: 2 figures" in result.stdout
-        assert "Skipped: 1 WSI" in result.stdout
+        assert "Download Complete" in result.output
+        assert "Downloaded: 2 figures" in result.output
+        assert "Skipped: 1 WSI" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1119,7 +1132,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["download-images", "31", "11"])
 
         assert result.exit_code == 0
-        assert "No figures were downloaded" in result.stdout
+        assert "No figures were downloaded" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1137,8 +1150,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["download-images", "31", "11"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
 
     # ------------------------------------------------------------------ #
     # ancestors command tests
@@ -1167,8 +1180,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["ancestors", "31", "11"])
 
         assert result.exit_code == 0
-        assert "Found 1 ancestors" in result.stdout
-        assert "Root" in result.stdout
+        assert "Found 1 ancestors" in result.output
+        assert "Root" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1193,7 +1206,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["ancestors", "31", "11", "--format", "table"])
 
         assert result.exit_code == 0
-        assert "Root" in result.stdout
+        assert "Root" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1224,7 +1237,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["ancestors", "31", "11", "--format", "json"])
 
         assert result.exit_code == 0
-        assert '"chapterTitle": "Root"' in result.stdout
+        assert '"chapterTitle": "Root"' in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1240,8 +1253,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["ancestors", "31", "11"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
 
     # ------------------------------------------------------------------ #
     # favourites command tests
@@ -1269,9 +1282,9 @@ class TestCLICommands:
         result = runner.invoke(app, ["favourites"])
 
         assert result.exit_code == 0
-        assert "Found 1 favourite chapters across 1 books" in result.stdout
-        assert "Test Book" in result.stdout
-        assert "Ch 1" in result.stdout
+        assert "Found 1 favourite chapters across 1 books" in result.output
+        assert "Test Book" in result.output
+        assert "Ch 1" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1295,8 +1308,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["favourites", "--format", "table"])
 
         assert result.exit_code == 0
-        assert "Test Book" in result.stdout
-        assert "Ch 1" in result.stdout
+        assert "Test Book" in result.output
+        assert "Ch 1" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1320,8 +1333,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["favourites", "--format", "list"])
 
         assert result.exit_code == 0
-        assert "Test Book" in result.stdout
-        assert "Ch 1" in result.stdout
+        assert "Test Book" in result.output
+        assert "Ch 1" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1350,7 +1363,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["favourites", "--format", "json"])
 
         assert result.exit_code == 0
-        assert '"bookTitle": "Test Book"' in result.stdout
+        assert '"bookTitle": "Test Book"' in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1367,8 +1380,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["favourites"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
 
     # ------------------------------------------------------------------ #
     # search command tests
@@ -1398,8 +1411,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["search", "test"])
 
         assert result.exit_code == 0
-        assert "Found 1 results" in result.stdout
-        assert "Test Result" in result.stdout
+        assert "Found 1 results" in result.output
+        assert "Test Result" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1425,9 +1438,9 @@ class TestCLICommands:
         result = runner.invoke(app, ["search", "test", "--format", "list"])
 
         assert result.exit_code == 0
-        assert "Test Result" in result.stdout
-        assert "Book ID" in result.stdout
-        assert "Ranking" in result.stdout
+        assert "Test Result" in result.output
+        assert "Book ID" in result.output
+        assert "Ranking" in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1461,7 +1474,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["search", "test", "--format", "json"])
 
         assert result.exit_code == 0
-        assert '"title": "Test Result"' in result.stdout
+        assert '"title": "Test Result"' in result.output
 
     @pytest.mark.unit
     @patch("who_api_client.cli.WHOAPIClient")
@@ -1487,8 +1500,8 @@ class TestCLICommands:
         result = runner.invoke(app, ["search", "test", "--books", "31,32"])
 
         assert result.exit_code == 0
-        assert "Found 1 results" in result.stdout
-        assert "books 31, 32" in result.stdout
+        assert "Found 1 results" in result.output
+        assert "books 31, 32" in result.output
         mock_client.search.assert_called_once_with(
             search_text="test",
             book_ids=[31, 32],
@@ -1510,5 +1523,5 @@ class TestCLICommands:
         result = runner.invoke(app, ["search", "test"])
 
         assert result.exit_code == 1
-        assert "Configuration error" in result.stdout
-        assert "login" in result.stdout
+        assert "Configuration error" in result.output
+        assert "login" in result.output
