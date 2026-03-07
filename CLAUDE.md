@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Type-safe Python client and CLI for the WHO Classification of Tumours API. Provides:
 - Complete API coverage (series, books, chapters, content, attachments, search, favourites, user profile)
-- Secure credential management (keyring, environment variables, .env files)
+- Secure credential management (encrypted config file, OS keyring for key storage, env vars)
 - Rich CLI with 15 commands and multiple output formats
 - Type-safe Python API using Pydantic v2 models
 
@@ -60,8 +60,11 @@ uv run who-api-client chapters 31
 - Attachment type detection (`is_figure`, `is_wsi`, `is_table`)
 
 **`credentials.py`** - Credential management (`CredentialManager`)
-- Priority: environment variables -> system keyring -> .env file
-- Cross-platform keyring support
+- Credentials encrypted at rest using Fernet (AES-128-CBC + HMAC-SHA256)
+- Encryption key stored in file (`~/.config/who-api-client/.encryption_key`) with `0o600` permissions
+- Priority: environment variables -> encrypted config file -> .env file
+- No automatic OS keychain access (avoids macOS prompts with unsigned binaries)
+- Explicit `--use-keyring` flag available for direct keyring storage
 
 **`cli.py`** - Rich CLI interface (15 commands)
 - Auth: login, logout, status, profile
@@ -97,7 +100,7 @@ BookSeries -> Book -> Chapter -> ChapterContent
 
 ## Dependencies
 
-Runtime: `httpx`, `pydantic[email]`, `typer`, `rich`, `keyring`, `python-dotenv`
+Runtime: `cryptography`, `httpx`, `pydantic[email]`, `typer`, `rich`, `keyring`, `python-dotenv`
 Dev: `pytest`, `pytest-mock`, `pytest-cov`, `ruff`
 
 ## Common Development Tasks

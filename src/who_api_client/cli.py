@@ -813,14 +813,22 @@ def download_images(
 def login(
     email: str = typer.Option(None, "--email", "-e", help="WHO account email"),
     password: str = typer.Option(None, "--password", "-p", help="WHO account password"),
+    use_keyring: bool = typer.Option(
+        False,
+        "--use-keyring",
+        help="Save credentials to system keyring instead of config file",
+    ),
     save_to_env: bool = typer.Option(
-        False, "--save-to-env", help="Save credentials to .env file instead of keyring"
+        False,
+        "--save-to-env",
+        help="Save credentials to .env file in current directory",
     ),
 ):
     """
     Authenticate with WHO API and save credentials.
 
     If email/password are not provided, you'll be prompted interactively.
+    Credentials are encrypted and saved to ~/.config/who-api-client/ by default.
     """
     cred_manager = CredentialManager()
 
@@ -845,51 +853,26 @@ def login(
             # Try to authenticate
             client._authenticate()
 
-            # If successful, save credentials
-            storage_method = ".env file" if save_to_env else "system keyring"
-            rprint(f"[bold blue]Saving credentials to {storage_method}...[/bold blue]")
+            # Determine storage backend
+            if save_to_env:
+                backend = "env_file"
+                storage_label = ".env file"
+            elif use_keyring:
+                backend = "keyring"
+                storage_label = "system keyring"
+            else:
+                backend = "config_file"
+                from .credentials import _get_credentials_file
 
-            try:
-                cred_manager.save_credentials(
-                    email, password, use_keyring=not save_to_env
-                )
-                rprint(
-                    "[bold green]✓ Successfully authenticated and saved credentials![/bold green]"
-                )
-                rprint(f"[dim]Credentials stored in: {storage_method}[/dim]")
-            except RuntimeError as save_error:
-                if "keyring" in str(save_error) and not save_to_env:
-                    # Keyring failed, offer to save to .env file
-                    rprint(f"[bold yellow]Warning: {save_error}[/bold yellow]")
-                    rprint("[dim]macOS Keychain access may be restricted.[/dim]")
+                storage_label = f"config file ({_get_credentials_file()})"
 
-                    use_env = typer.confirm(
-                        "\nWould you like to save credentials to .env file instead?",
-                        default=True,
-                    )
+            rprint(f"[bold blue]Saving credentials to {storage_label}...[/bold blue]")
 
-                    if use_env:
-                        rprint(
-                            "[bold blue]Saving credentials to .env file...[/bold blue]"
-                        )
-                        cred_manager.save_credentials(
-                            email, password, use_keyring=False
-                        )
-                        rprint(
-                            "[bold green]✓ Successfully saved credentials to .env file![/bold green]"
-                        )
-                        rprint(
-                            "[dim]Add .env to your .gitignore to keep credentials secure.[/dim]"
-                        )
-                    else:
-                        rprint(
-                            "[yellow]Credentials not saved. Authentication was successful.[/yellow]"
-                        )
-                        rprint(
-                            "[dim]You can set WHO_EMAIL and WHO_PASSWORD environment variables instead.[/dim]"
-                        )
-                else:
-                    raise
+            cred_manager.save_credentials(email, password, backend=backend)
+            rprint(
+                "[bold green]✓ Successfully authenticated and saved credentials![/bold green]"
+            )
+            rprint(f"[dim]Credentials stored in: {storage_label}[/dim]")
 
             # Clear temporary environment variables
             del os.environ["WHO_EMAIL"]
@@ -908,12 +891,12 @@ def login(
 def logout(
     debug: bool = typer.Option(False, "--debug", "-d", help="Show debug information"),
 ):
-    """Remove stored WHO API credentials from keyring."""
+    """Remove stored WHO API credentials."""
     cred_manager = CredentialManager()
 
     if debug:
-        info = cred_manager.debug_keyring_info()
-        rprint("[bold cyan]Keyring Debug Information:[/bold cyan]")
+        info = cred_manager.debug_info()
+        rprint("[bold cyan]Debug Information:[/bold cyan]")
         for key, value in info.items():
             rprint(f"  {key}: {value}")
 
@@ -923,40 +906,28 @@ def logout(
 
     source = cred_manager.get_credential_source()
 
-    if source == "system keyring":
+    if source == "environment variables":
+        rprint(
+            f"[yellow]Credentials are stored in {source}. Please remove them manually.[/yellow]"
+        )
+    elif source == ".env file":
+        rprint(
+            f"[yellow]Credentials are stored in {source}. Please remove them manually.[/yellow]"
+        )
+        rprint(
+            "[dim]You can delete the WHO_EMAIL and WHO_PASSWORD lines from your .env file.[/dim]"
+        )
+    else:
         confirm = typer.confirm("Are you sure you want to remove stored credentials?")
         if confirm:
             try:
                 cred_manager.clear_credentials()
-
-                # Verify they're actually gone
-                if cred_manager.get_credential_source() == "system keyring":
-                    rprint(
-                        "[bold red]⚠️  Warning: Credentials may not have been fully removed from keychain.[/bold red]"
-                    )
-                    rprint(
-                        "[dim]You may need to manually remove them from Keychain Access.[/dim]"
-                    )
-                else:
-                    rprint(
-                        "[bold green]✓ Credentials removed from system keyring.[/bold green]"
-                    )
+                rprint("[bold green]✓ Credentials removed.[/bold green]")
             except RuntimeError as e:
                 rprint(f"[bold red]Failed to remove credentials: {e}[/bold red]")
-                rprint(
-                    "[dim]You may need to manually remove them from Keychain Access.[/dim]"
-                )
                 raise typer.Exit(1) from None
         else:
             rprint("[yellow]Logout cancelled.[/yellow]")
-    else:
-        rprint(
-            f"[yellow]Credentials are stored in {source}. Please remove them manually.[/yellow]"
-        )
-        if source == ".env file":
-            rprint(
-                "[dim]You can delete the WHO_EMAIL and WHO_PASSWORD lines from your .env file.[/dim]"
-            )
 
 
 @app.command()

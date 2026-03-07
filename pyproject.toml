@@ -9,6 +9,7 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+    "cryptography>=44.0.0",
     "httpx>=0.28.1",
     "keyring>=25.6.0",
     "pydantic[email]>=2.11.7",

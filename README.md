@@ -13,7 +13,7 @@ An **unofficial**, community-built Python client and CLI for the [WHO Classifica
 - **Rich CLI** - 15 commands with table, tree, JSON, and other output formats
 - **Image downloads** - batch-download chapter figures with automatic WSI/table detection
 - **Search** - simple text search from the CLI, advanced boolean search (AND/OR/NOT, parentheses) from Python
-- **Secure credential storage** - system keyring, environment variables, or `.env` file
+- **Secure credential storage** - credentials encrypted at rest (AES) with restricted file permissions
 - **Automatic token management** - transparent login, refresh, and retry
 
 ## Requirements
@@ -68,20 +68,26 @@ who-api-client search "adenocarcinoma"
 
 ## Authentication
 
+Credentials are **encrypted at rest** using Fernet (AES-128-CBC + HMAC-SHA256) and stored in `~/.config/who-api-client/credentials.enc`. The encryption key is stored alongside it in `.encryption_key` with restricted file permissions (`0600`). This works reliably across all installation methods (`uv tool install`, `pipx`, `pip`, etc.).
+
 The client checks for credentials in this order:
 
-1. **Environment variables** (`WHO_EMAIL`, `WHO_PASSWORD`) - highest priority, ideal for CI/CD
-2. **System keyring** - macOS Keychain, Windows Credential Manager, Linux Secret Service
-3. **`.env` file** - development convenience
+1. **Environment variables** (`WHO_EMAIL`, `WHO_PASSWORD`) — highest priority, ideal for CI/CD
+2. **Encrypted config file** (`~/.config/who-api-client/credentials.enc`) — default, works across all installation methods
+3. **System keyring** (legacy) — direct credential storage in macOS Keychain, Windows Credential Manager, or Linux Secret Service
+4. **`.env` file** — development convenience
 
 ```bash
-# Interactive login (saves to system keyring)
+# Interactive login (encrypts and saves to config file)
 who-api-client login
 
 # Provide credentials directly
 who-api-client login --email you@example.com --password secret
 
-# Save to .env file instead of keyring
+# Use system keyring instead (legacy)
+who-api-client login --use-keyring
+
+# Save to .env file in current directory
 who-api-client login --save-to-env
 
 # Check authentication status
@@ -256,13 +262,23 @@ All text models provide `clean_*` properties that strip HTML tags, decode entiti
 
 This is an unofficial API client. Use it at your own risk.
 
-**Credential storage:** The three credential backends have different security properties:
+**Credential storage:** Credentials are encrypted at rest following the same pattern used by the [Google Workspace CLI](https://github.com/googleworkspace/cli):
+
+| Component | Storage | Protection |
+|-----------|---------|------------|
+| Credentials | `~/.config/who-api-client/credentials.enc` | AES-encrypted (Fernet), file permissions `0600` |
+| Encryption key | `~/.config/who-api-client/.encryption_key` | File permissions `0600` |
+| Config directory | `~/.config/who-api-client/` | Directory permissions `0700` |
+
+The encryption key is stored as a file rather than in the OS keychain, ensuring consistent behavior across all Python installation methods and platforms.
+
+**Other credential backends** have different security properties:
 
 | Backend | Security | Notes |
 |---------|----------|-------|
-| System keyring | Best | OS-level encryption (macOS Keychain, Windows Credential Manager). Default and recommended. |
 | Environment variables | Moderate | Suitable for CI/CD. May be visible in process listings or shell history. |
-| `.env` file | Weakest | **Stores your password in plaintext on disk.** Use only if keyring is unavailable. Avoid committing this file — `.env` is in `.gitignore` by default. |
+| System keyring (legacy, `--use-keyring`) | Varies | OS-level encryption, but may fail with unsigned Python binaries. |
+| `.env` file (`--save-to-env`) | Weakest | **Plaintext on disk** in the current directory. Avoid committing — `.env` is in `.gitignore` by default. |
 
 ## Error Handling
 

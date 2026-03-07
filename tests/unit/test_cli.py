@@ -55,9 +55,9 @@ class TestCLICommands:
         assert "Testing credentials..." in result.stdout
         assert "Successfully authenticated" in result.stdout
 
-        # Verify credentials were saved
+        # Verify credentials were saved to config file (default)
         mock_cred_manager.save_credentials.assert_called_once_with(
-            "test@example.com", "testpass", use_keyring=True
+            "test@example.com", "testpass", backend="config_file"
         )
 
     @pytest.mark.unit
@@ -117,7 +117,7 @@ class TestCLICommands:
 
         # Verify credentials were saved to .env
         mock_cred_manager.save_credentials.assert_called_once_with(
-            "test@example.com", "testpass", use_keyring=False
+            "test@example.com", "testpass", backend="env_file"
         )
 
     @pytest.mark.unit
@@ -163,10 +163,7 @@ class TestCLICommands:
         result = runner.invoke(app, ["logout"], input="y\n")
 
         assert result.exit_code == 0
-        assert (
-            "Warning: Credentials may not have been fully removed from keychain"
-            in result.stdout
-        )
+        assert "Credentials removed" in result.stdout
         mock_cred_manager.clear_credentials.assert_called_once()
 
     @pytest.mark.unit
@@ -175,7 +172,9 @@ class TestCLICommands:
         """Test logout command when user cancels."""
         mock_cred_manager = Mock()
         mock_cred_manager.has_credentials.return_value = True
-        mock_cred_manager.get_credential_source.return_value = "system keyring"
+        mock_cred_manager.get_credential_source.return_value = (
+            "config file (~/.config/who-api-client/credentials.enc)"
+        )
         mock_cred_manager_class.return_value = mock_cred_manager
 
         # Simulate user cancelling
@@ -197,6 +196,23 @@ class TestCLICommands:
 
         assert result.exit_code == 0
         assert "No credentials found to remove" in result.stdout
+
+    @pytest.mark.unit
+    @patch("who_api_client.cli.CredentialManager")
+    def test_logout_with_config_file_credentials(self, mock_cred_manager_class, runner):
+        """Test logout command when credentials are in config file."""
+        mock_cred_manager = Mock()
+        mock_cred_manager.has_credentials.return_value = True
+        mock_cred_manager.get_credential_source.return_value = (
+            "config file (/home/user/.config/who-api-client/credentials.json)"
+        )
+        mock_cred_manager_class.return_value = mock_cred_manager
+
+        result = runner.invoke(app, ["logout"], input="y\n")
+
+        assert result.exit_code == 0
+        assert "Credentials removed" in result.stdout
+        mock_cred_manager.clear_credentials.assert_called_once()
 
     @pytest.mark.unit
     @patch("who_api_client.cli.CredentialManager")
