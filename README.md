@@ -74,17 +74,16 @@ The client checks for credentials in this order:
 
 1. **Environment variables** (`WHO_EMAIL`, `WHO_PASSWORD`) — highest priority, ideal for CI/CD
 2. **Encrypted config file** (`~/.config/who-api-client/credentials.enc`) — default, works across all installation methods
-3. **System keyring** (legacy) — direct credential storage in macOS Keychain, Windows Credential Manager, or Linux Secret Service
-4. **`.env` file** — development convenience
+3. **`.env` file** — development convenience
 
 ```bash
 # Interactive login (encrypts and saves to config file)
 who-api-client login
 
-# Provide credentials directly
-who-api-client login --email you@example.com --password secret
+# Provide email via flag (password is always prompted securely)
+who-api-client login --email you@example.com
 
-# Use system keyring instead (legacy)
+# Use system keyring instead (opt-in)
 who-api-client login --use-keyring
 
 # Save to .env file in current directory
@@ -270,15 +269,15 @@ This is an unofficial API client. Use it at your own risk.
 | Encryption key | `~/.config/who-api-client/.encryption_key` | File permissions `0600` |
 | Config directory | `~/.config/who-api-client/` | Directory permissions `0700` |
 
-The encryption key is stored as a file rather than in the OS keychain, ensuring consistent behavior across all Python installation methods and platforms.
+The encryption key is stored as a file rather than in the OS keychain, ensuring consistent behavior across all Python installation methods and platforms. Running `who-api-client logout` removes both the credentials file and the encryption key.
 
 **Other credential backends** have different security properties:
 
 | Backend | Security | Notes |
 |---------|----------|-------|
 | Environment variables | Moderate | Suitable for CI/CD. May be visible in process listings or shell history. |
-| System keyring (legacy, `--use-keyring`) | Varies | OS-level encryption, but may fail with unsigned Python binaries. |
-| `.env` file (`--save-to-env`) | Weakest | **Plaintext on disk** in the current directory. Avoid committing — `.env` is in `.gitignore` by default. |
+| System keyring (`--use-keyring`) | Strongest | OS-level encryption (macOS Keychain, Windows Credential Manager, Linux Secret Service). May prompt with unsigned Python binaries on macOS. |
+| `.env` file (`--save-to-env`) | Weakest | **Plaintext on disk** (file permissions `0600`) in the current directory. Avoid committing — `.env` is in `.gitignore` by default. |
 
 ## Error Handling
 
